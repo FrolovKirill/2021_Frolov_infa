@@ -1,0 +1,6 @@
+Top players: 
+1. Player 1, score: 93
+2. Player 2, score: 72
+3. Player 3, score: 60
+4. Frolov Kirill, score: 54
+5. Player 4, score: 24
