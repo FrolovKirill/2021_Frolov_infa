@@ -289,10 +289,10 @@ while not finished:
                     score = counter(k, score)
 
     for k in range(6):
+        repulse(k)
         BALLS[k][0] += BALLS[k][3]
         BALLS[k][1] += BALLS[k][4]
         time_check(k)
-        repulse(k)
 
     for k in range(3):
         dr.circle(screen, BALLS[k][5], (BALLS[k][0], BALLS[k][1]), BALLS[k][2])
