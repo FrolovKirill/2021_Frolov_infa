@@ -6,7 +6,6 @@ pygame.init()
 pygame.font.init()
 
 FPS = 50
-START_TIME = 0
 screen = pygame.display.set_mode((800, 600))
 myfont = pygame.font.SysFont('calibri', 30)
 
@@ -28,6 +27,32 @@ BALLS = [[0, 0, 0, 0, 0, (0, 0, 0), 0],  # Двумерный массив, от
          [0, 0, 0, 0, 0, (0, 0, 0), 0]]  # Седьмой элемент отвечает за время жизни. Если значение > 0, то шарик есть,
 # а само значение показывает оставшееся время жизни шарика; если значение < 0, то это время до появления нового
 # шарика вместо исчезшего.
+
+
+def start():
+    """
+    Функция рисует кнопку START и ожидает её нажатия.
+    :return: возвращает время начала самой игры.
+    """
+    finish = False
+
+    while not finish:
+        clock.tick(FPS)
+        for events in pygame.event.get():
+            if events.type == pygame.QUIT:
+                finish = True
+            else:
+                if events.type == pygame.MOUSEBUTTONDOWN:
+                    if 350 < events.pos[0] < 450 and 285 < events.pos[1] < 315:
+                        finish = True
+
+        dr.rect(screen, BLUE, (350, 285, 100, 30), 2)
+        surface = myfont.render("START", True, RED)
+        screen.blit(surface, (363, 288))
+        pygame.display.update()
+        screen.fill(BLACK)
+
+    return pygame.time.get_ticks()
 
 
 def new_ball(num):
@@ -104,12 +129,14 @@ def display(points):
     :param points: колличество очков, заработанных игроком.
     :return: возвращает 1, если закончилось время игры, иначе 0.
     """
+    time = pygame.time.get_ticks() - START_TIME
+
     surf = myfont.render("Your score:" + str(points), True, WHITE)
     screen.blit(surf, (0, 0))
-    surf = myfont.render("Time left: " + str(round((120 - pygame.time.get_ticks() / 1000) // 60)) + "m "
-                         + str(round((120 - pygame.time.get_ticks() / 1000) % 60, 1)) + "s", True, WHITE)
+    surf = myfont.render("Time left: " + str(round((120 - time / 1000) // 60)) + "m "
+                         + str(round((120 - time / 1000) % 60, 1)) + "s", True, WHITE)
     screen.blit(surf, (550, 0))
-    return 1 if pygame.time.get_ticks() / 1000 >= 119.9 else 0
+    return 1 if time / 1000 >= 119.9 else 0
 
 
 def eye(num, x, y, coef):
@@ -144,6 +171,18 @@ def smile(num):
                                (x - 0.24 * r, y - 0.34 * r), (x - 1.08 * r, y - 0.8 * r)])
     dr.polygon(screen, BLACK, [(x + 0.94 * r, y - 0.71 * r), (x + 0.2 * r, y - 0.4 * r),
                                (x + 0.24 * r, y - 0.32 * r), (x + 0.98 * r, y - 0.64 * r)])
+
+
+def snitch(x, y):
+    """
+    Рисует снитч. Если его поймать, то получешь 100 очков.
+    :param x: координата левого верхнего угла снитча по оси x.
+    :param y: координата левого верхнего угла снитча по оси y.
+    :return:
+    """
+    snitch_surf = pygame.image.load("snitch.png")
+    snitch_surf = pygame.transform.scale(snitch_surf, (100, 50))
+    screen.blit(snitch_surf, (x, y))
 
 
 def counter(num, points):
@@ -184,9 +223,12 @@ def user():
                     user_name = user_name[:-1]
                 else:
                     user_name += events.unicode
+
         user_name = ''.join(user_name)
-        surface = myfont.render("Enter your name: " + user_name, True, WHITE)
-        screen.blit(surface, (0, 0))
+        surface = myfont.render("Enter your name", True, WHITE)
+        screen.blit(surface, (300, 250))
+        surface = myfont.render(user_name, True, WHITE)
+        screen.blit(surface, (400 - 6.4 * len(user_name), 285))
         pygame.display.update()
         screen.fill(BLACK)
     return user_name
@@ -270,6 +312,9 @@ def results_drawing():
 
 pygame.display.update()
 clock = pygame.time.Clock()
+
+START_TIME = start()
+
 score = 0
 
 finished = False
@@ -277,6 +322,11 @@ finished = False
 for k in range(6):
     new_ball(k)
     BALLS[k][6] += randint(0, 1500)
+
+x_snitch = randint(0, 700)
+y_snitch = randint(0, 500)
+
+snitch_is_alive = 1
 
 while not finished:
     clock.tick(FPS)
@@ -287,6 +337,11 @@ while not finished:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 for k in range(6):
                     score = counter(k, score)
+
+                if x_snitch < event.pos[0] < x_snitch + 100 and y_snitch < event.pos[1] < y_snitch + 50\
+                        and snitch_is_alive:
+                    score += 100
+                    snitch_is_alive = 0
 
     for k in range(6):
         repulse(k)
@@ -302,8 +357,14 @@ while not finished:
         BALLS[k][3] = randint(-25, 25)
         BALLS[k][4] = randint(-25, 25)
 
+    if snitch_is_alive:
+        x_snitch = (x_snitch + randint(-50, 50)) % 700
+        y_snitch = (y_snitch + randint(-50, 50)) % 500
+        snitch(x_snitch, y_snitch)
+
     if display(score) == 1:
         finished = True
+
     pygame.display.update()
     screen.fill(BLACK)
 
