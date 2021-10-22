@@ -25,6 +25,8 @@ BALLS = [[0, 0, 0, 0, 0, (0, 0, 0), 0],  # Двумерный массив, от
          [0, 0, 0, 0, 0, (0, 0, 0), 0],  # Третий элемент массива отвечает за радиус шарика; 4 и 5 за скорость по x и y.
          [0, 0, 0, 0, 0, (0, 0, 0), 0],  # Шестой элемент массива принимает кортеж с цветом шарика в формате RGB.
          [0, 0, 0, 0, 0, (0, 0, 0), 0]]  # Седьмой элемент отвечает за время жизни. Если значение > 0, то шарик есть,
+
+
 # а само значение показывает оставшееся время жизни шарика; если значение < 0, то это время до появления нового
 # шарика вместо исчезшего.
 
@@ -66,7 +68,7 @@ def new_ball(num):
     BALLS[num][3] = randint(-5, 5)
     BALLS[num][4] = randint(-5, 5)
     BALLS[num][5] = COLORS[randint(0, 5)]
-    BALLS[num][6] = randint(1000, 5000)
+    BALLS[num][6] = randint(2000, 5000)
 
 
 def distance(coord1, coord2):
@@ -88,22 +90,22 @@ def repulse(num):
         if num < 3:
             BALLS[num][3] = randint(1, 5)
         else:
-            BALLS[num][3] = randint(25, 50)
+            BALLS[num][3] = randint(5, 10)
     if BALLS[num][0] >= 800 - BALLS[num][2]:
         if num < 3:
             BALLS[num][3] = randint(-5, 1)
         else:
-            BALLS[num][3] = randint(-50, -25)
+            BALLS[num][3] = randint(-10, -5)
     if BALLS[num][1] <= BALLS[num][2] + 30:
         if num < 3:
             BALLS[num][4] = randint(1, 5)
         else:
-            BALLS[num][4] = randint(25, 50)
+            BALLS[num][4] = randint(5, 10)
     if BALLS[num][1] >= 600 - BALLS[num][2]:
         if num < 3:
             BALLS[num][4] = randint(-5, 1)
         else:
-            BALLS[num][4] = randint(-50, -25)
+            BALLS[num][4] = randint(-10, -5)
 
 
 def time_check(num):
@@ -173,16 +175,62 @@ def smile(num):
                                (x + 0.24 * r, y - 0.32 * r), (x + 0.98 * r, y - 0.64 * r)])
 
 
-def snitch(x, y):
+def balls_draw(num):
     """
-    Рисует снитч. Если его поймать, то получешь 100 очков.
+    Функция отрисовывает все шары, двигает их координы, проверяет отражение от стенок, устанавливает скорости
+    смайликам. :param num: номер итерации цикла в основной программе. Нужен, чтобы менять направление движения
+    смайликов раз в 15 итераций.
+    """
+    for i in range(6):
+        repulse(i)
+        BALLS[i][0] += BALLS[i][3]
+        BALLS[i][1] += BALLS[i][4]
+        time_check(i)
+
+    for i in range(3):
+        dr.circle(screen, BALLS[i][5], (BALLS[i][0], BALLS[i][1]), BALLS[i][2])
+
+    for i in range(3, 6):
+        smile(i)
+        if (num + 3 * i) % 15 == 0:  # (num + 3 * i), а не num, чтобы смайлики в разное время меняли свои траектории.
+            direction = randint(-1000, 1000)
+            if direction != 0:
+                BALLS[i][3] = randint(5, 10) * int(direction / abs(direction))
+            else:
+                BALLS[i][3] = 0
+
+            direction = randint(-1000, 1000)
+            if direction != 0:
+                BALLS[i][4] = randint(5, 10) * int(direction / abs(direction))
+            else:
+                BALLS[i][4] = 0
+
+
+def snitch(x, y, vx, vy):
+    """
+    Рисует снитч, меняет его координаты и отражает от стенок. Если его поймать, то получешь 50 очков.
     :param x: координата левого верхнего угла снитча по оси x.
     :param y: координата левого верхнего угла снитча по оси y.
-    :return:
+    :param vx: скорость снитча по оси x.
+    :param vy: скорость снитча по оси y.
+    :return: возвращает новые значения координат и скоростей.
     """
+    if x <= 0:
+        vx = randint(20, 35)
+    if x >= 720:
+        vx = randint(-35, -20)
+    if y <= 0:
+        vy = randint(20, 35)
+    if y >= 560:
+        vy = randint(-35, -20)
+
+    x = x + vx
+    y = y + vy
     snitch_surf = pygame.image.load("snitch.png")
     snitch_surf = pygame.transform.scale(snitch_surf, (100, 50))
     screen.blit(snitch_surf, (x, y))
+
+    return x, y, vx, vy
 
 
 def counter(num, points):
@@ -321,12 +369,16 @@ finished = False
 
 for k in range(6):
     new_ball(k)
-    BALLS[k][6] += randint(0, 1500)
+    BALLS[k][6] += randint(-1000, 1500)
 
 x_snitch = randint(0, 700)
 y_snitch = randint(0, 500)
+Vx_snitch = randint(20, 35)
+Vy_snitch = randint(20, 35)
 
 snitch_is_alive = 1
+count = 1  # Переменная считает, какой раз запускается цикл.
+# Нужна для того, чтобы злые смайлики меняли траекторию раз в 15 итераций цикла.
 
 while not finished:
     clock.tick(FPS)
@@ -338,35 +390,23 @@ while not finished:
                 for k in range(6):
                     score = counter(k, score)
 
-                if x_snitch < event.pos[0] < x_snitch + 100 and y_snitch < event.pos[1] < y_snitch + 50\
+                if x_snitch < event.pos[0] < x_snitch + 100 and y_snitch < event.pos[1] < y_snitch + 50 \
                         and snitch_is_alive:
-                    score += 100
+                    score += 50
                     snitch_is_alive = 0
 
-    for k in range(6):
-        repulse(k)
-        BALLS[k][0] += BALLS[k][3]
-        BALLS[k][1] += BALLS[k][4]
-        time_check(k)
-
-    for k in range(3):
-        dr.circle(screen, BALLS[k][5], (BALLS[k][0], BALLS[k][1]), BALLS[k][2])
-
-    for k in range(3, 6):
-        smile(k)
-        BALLS[k][3] = randint(-25, 25)
-        BALLS[k][4] = randint(-25, 25)
+    balls_draw(count)
 
     if snitch_is_alive:
-        x_snitch = (x_snitch + randint(-50, 50)) % 700
-        y_snitch = (y_snitch + randint(-50, 50)) % 500
-        snitch(x_snitch, y_snitch)
+        x_snitch, y_snitch, Vx_snitch, Vy_snitch = snitch(x_snitch, y_snitch, Vx_snitch, Vy_snitch)
 
     if display(score) == 1:
         finished = True
 
     pygame.display.update()
     screen.fill(BLACK)
+
+    count += 1
 
 username = user()
 

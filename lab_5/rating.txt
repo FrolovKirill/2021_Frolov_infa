@@ -1,6 +1,6 @@
 Top players: 
-1. Kirill, score: 152
-2. Kazimirov Yaroslav, score: 118
-3. Frolov Kirill, score: 116
-4. Player 0, score: 105
-5. Player 1, score: 93
+1. Player1, score: 90
+2. Player2, score: 80
+3. Player3, score: 70
+4. Player4, score: 50
+5. Player5, score: 40
