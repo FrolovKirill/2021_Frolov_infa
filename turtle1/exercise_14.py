@@ -13,6 +13,7 @@ t.penup()
 t.goto(-250, 0)
 t.pendown()
 star(10, 200)
+
 t.penup()
 t.goto(50, 0)
 t.pendown()
